@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="zh-CN" data-space-view="direct">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="CrystalLab：Bravais 格子、倒格子、Brillouin 区、Miller 指数、点群与空间群的三维晶体学科研工作台。" />
+  <title>CrystalLab</title>
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <meta name="theme-color" content="#0b0d0f" />
+  <link rel="stylesheet" href="./src/styles/app.css" />
+  <script>
+    window.MathJax={loader:{load:['[tex]/boldsymbol']},tex:{inlineMath:[['\\(','\\)']],displayMath:[['\\[','\\]']]},svg:{fontCache:'global'}};
+  </script>
+  <script defer src="./vendor/mathjax/tex-svg.js"></script>
+</head>
+<body>
+<div class="app-shell theory-closed" id="appShell">
+  <header class="toolbar">
+    <nav class="segmented mode-switch" aria-label="对象类型">
+      <button class="segment mode-tab active" data-action="setMode" data-mode="structure" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l8 5v10l-8 5-8-5V7l8-5Zm0 10L20 7M12 12L4 7M12 12v10"/></svg>
+        <span data-label>结构</span>
+      </button>
+      <button class="segment mode-tab" data-action="setMode" data-mode="bravais" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h6v6H4zM14 6h6v6h-6zM9 14h6v6H9z"/></svg>
+        <span data-label>Bravais</span>
+      </button>
+    </nav>
+
+    <div class="toolbar-actions" aria-label="全局视图">
+      <div class="segmented space-switch visual-tool" role="group" aria-label="空间视图">
+        <button class="segment active" data-action="setSpaceView" data-space-view="direct" type="button">实空间</button>
+        <button class="segment" data-action="setSpaceView" data-space-view="reciprocal" type="button">倒空间</button>
+        <button class="segment" data-action="setSpaceView" data-space-view="overlay" type="button">对照</button>
+      </div>
+
+      <button data-action="toggleRepeat" id="repeatToggleBtn" class="icon-button visual-tool" type="button" title="显示全局周期重复" aria-label="当前为局部范围；切换为全局范围" aria-pressed="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <g class="repeat-local-icon"><rect x="7" y="7" width="10" height="10" rx="1"/><path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4"/></g>
+          <g class="repeat-global-icon"><rect x="4" y="4" width="7" height="7"/><rect x="13" y="4" width="7" height="7"/><rect x="4" y="13" width="7" height="7"/><rect x="13" y="13" width="7" height="7"/></g>
+        </svg>
+        <span class="sr-only" data-label>周期范围</span>
+      </button>
+
+      <button data-action="openCatalog" id="catalogToggleBtn" class="icon-button" type="button" title="晶体学索引" aria-label="晶体学索引">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.5 4a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13Zm4.8 11.3L20 20"/></svg>
+        <span class="sr-only">索引</span>
+      </button>
+
+      <details class="tool-menu visual-tool" id="viewMenu">
+        <summary class="icon-button" title="标准视向" aria-label="标准视向"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16M4 12h16M12 12l5.5-5.5M12 12l-5.5 5.5"/></svg></summary>
+        <div class="menu-popover">
+          <button data-action="setStandardView" data-view="iso" type="button"><span>◇</span><span>等轴</span></button>
+          <button data-action="setStandardView" data-view="100" type="button"><span>→</span><span>[100]</span></button>
+          <button data-action="setStandardView" data-view="110" type="button"><span>↗</span><span>[110]</span></button>
+          <button data-action="setStandardView" data-view="111" type="button"><span>↘</span><span>[111]</span></button>
+          <button data-action="setStandardView" data-view="001" type="button"><span>↑</span><span>[001]</span></button>
+        </div>
+      </details>
+
+      <button data-action="toggleAutoRotate" id="autoRotateBtn" class="icon-button visual-tool" type="button" title="自动旋转" aria-label="自动旋转">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 0 1-14.5 4.7M4 12A8 8 0 0 1 18.5 7.3M18.5 7.3V3.5m0 3.8h-3.8M5.5 16.7v3.8m0-3.8h3.8"/></svg>
+        <span class="sr-only">旋转</span>
+      </button>
+
+      <button data-action="toggleTheory" id="theoryToggleBtn" class="icon-button visual-tool" type="button" title="定义与推导" aria-label="定义与推导">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14M5 12h8m-8 7h14M17 9l3 3-3 3"/></svg>
+        <span class="sr-only">定义与推导</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <aside class="inspector" aria-label="当前对象控制">
+      <div class="inspector-scroll">
+        <section class="inspector-section">
+          <h2>对象</h2>
+          <label class="field" id="structureField"><select data-action="setStructure" id="structureSelect" aria-label="晶体结构"></select></label>
+          <label class="field hidden" id="bravaisField"><span>Bravais 格子</span><select data-action="setBravais" id="bravaisSelect"></select></label>
+          <div id="objectIdentity" class="object-identity"></div>
+        </section>
+
+        <section class="inspector-section">
+          <h2>几何</h2>
+          <div class="control-block">
+            <label class="toggle-row"><input type="checkbox" data-action="setNamedLayer" data-layer-action="setMillerVisible" id="millerLayerToggle"><span>Miller / G<sub>hkl</sub></span></label>
+            <div id="millerControls" class="control-details hidden">
+              <div class="hkl-grid">
+                <label><span>h</span><input data-action="setMillerIndices" id="hInput" type="number" min="-6" max="6" value="1"></label>
+                <label><span>k</span><input data-action="setMillerIndices" id="kInput" type="number" min="-6" max="6" value="1"></label>
+                <label><span>l</span><input data-action="setMillerIndices" id="lInput" type="number" min="-6" max="6" value="1"></label>
+              </div>
+              <div class="preset-grid"><button data-action="setMillerPreset" data-hkl="1,0,0" type="button">(100)</button><button data-action="setMillerPreset" data-hkl="1,1,0" type="button">(110)</button><button data-action="setMillerPreset" data-hkl="1,1,1" type="button">(111)</button></div>
+              <button data-action="toggleMillerFamily" id="millerFamilyBtn" class="text-button" type="button"><span>▱</span><span data-label>显示 {hkl} 面族</span></button>
+            </div>
+          </div>
+          <div class="control-block">
+            <label class="toggle-row"><input type="checkbox" data-action="setNamedLayer" data-layer-action="setKPathVisible" id="kPathLayerToggle"><span>标准 k 路径</span></label>
+            <div id="kpathNote" class="micro-readout"></div>
+          </div>
+        </section>
+
+        <section class="inspector-section">
+          <h2>对称</h2>
+          <div class="control-block">
+            <label class="toggle-row"><input type="checkbox" data-action="setNamedLayer" data-layer-action="setSymmetryVisible" id="symmetryLayerToggle"><span>点群操作</span></label>
+            <div id="symmetryControls" class="control-details hidden">
+              <label class="field" id="symmetryOpField"><span>操作</span><select data-action="setSymmetry" id="symmetrySelect"></select></label>
+              <button data-action="playSymmetry" id="symmetryApplyBtn" class="text-button" type="button" title="播放一次当前群作用">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5 18 12 8 18.5Z"/></svg><span>作用一次</span>
+              </button>
+              <div id="groupOrderReadout" class="micro-readout"></div>
+              <label class="toggle-row subtle"><input type="checkbox" data-action="setNamedLayer" data-layer-action="setOrbitVisible" id="groupOrbitToggle"><span>一般位置轨道</span></label>
+            </div>
+          </div>
+        </section>
+      </div>
+    </aside>
+
+    <section class="stage-shell" aria-label="三维晶体学视图">
+      <div class="stage" id="stage">
+        <div id="stageViewport" class="stage-viewport"></div>
+        <header class="stage-meta">
+          <div class="stage-title"><span id="stageSpaceDot" class="space-dot is-direct"></span><strong id="stageTitle">实空间</strong></div>
+          <span id="stageCaption" class="stage-caption"></span>
+        </header>
+        <div id="stageLegend" class="stage-legend"></div>
+        <aside id="stageReadout" class="stage-readout" aria-label="当前参数"></aside>
+
+        <div class="layer-dock" id="layerDock" aria-label="当前空间图层">
+          <div class="layer-grid layer-grid-shared">
+            <span class="layer-space-label">共享</span>
+            <button class="layer-button" data-action="toggleLayer" data-layer="reference" type="button" aria-pressed="true"><i></i>格架</button>
+          </div>
+          <div class="layer-grid direct-layer-row">
+            <span class="layer-space-label">实空间</span>
+            <button class="layer-button" data-action="toggleLayer" data-layer="primitive" type="button"><i></i>原胞</button>
+            <button class="layer-button" data-action="toggleLayer" data-layer="ws" type="button"><i></i>W–S</button>
+            <button class="layer-button" data-action="toggleLayer" data-layer="conventional" type="button"><i></i>惯用胞</button>
+            <button class="layer-button" data-action="toggleLayer" data-layer="family" type="button"><i></i>{hkl}</button>
+          </div>
+          <div class="layer-grid reciprocal-layer-row">
+            <span class="layer-space-label">倒空间</span>
+            <button class="layer-button" data-action="toggleLayer" data-layer="recipPrim" type="button"><i></i>原胞</button>
+            <button class="layer-button" data-action="toggleLayer" data-layer="recipConv" type="button"><i></i>惯用胞</button>
+            <button class="layer-button" data-action="toggleLayer" data-layer="bz" type="button"><i></i>BZ</button>
+            <button class="layer-button" data-action="toggleLayer" data-layer="g" type="button"><i></i>G<sub>hkl</sub></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="catalog-area hidden" id="catalogArea" aria-label="晶体学索引">
+      <div class="catalog-toolbar">
+        <div class="segmented catalog-kind-tabs">
+          <button class="segment active" data-catalog-kind="space" type="button">空间群 230</button>
+          <button class="segment" data-catalog-kind="point" type="button">点群 32</button>
+          <button class="segment" data-catalog-kind="bravais" type="button">Bravais 14</button>
+          <button class="segment" data-catalog-kind="reference" type="button">约定</button>
+        </div>
+        <label class="search-field"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm5 12 4 4"/></svg><input id="catalogSearch" type="search" placeholder="编号 / H–M / Schoenflies / Bravais…" /></label>
+        <select id="catalogSystemFilter" aria-label="晶系筛选"></select>
+        <span id="catalogCount" class="catalog-count"></span>
+      </div>
+      <div class="catalog-body">
+        <div class="catalog-list" id="catalogList"></div>
+        <article class="catalog-detail" id="catalogDetail"></article>
+      </div>
+    </section>
+
+    <aside class="theory-panel" id="theoryPanel">
+      <header class="theory-header"><button data-action="closeTheory" id="closeTheoryBtn" class="icon-button compact" type="button" aria-label="关闭">×</button></header>
+      <div class="segmented theory-tabs">
+        <button class="segment theory-tab active" data-action="setTheoryTab" data-theory-tab="overview" type="button">定义</button>
+        <button class="segment theory-tab" data-action="setTheoryTab" data-theory-tab="derivation" type="button">推导</button>
+      </div>
+      <div id="theoryContent" class="theory-content"></div>
+      <!-- 声明要能走到，不能只躺在仓库根目录：docs/THIRD-PARTY-NOTICES.md 自己就要求它随分发保留，
+           而这里（以及 tools/build.mjs 产出的 dist/）就是分发物。放在 #theoryContent 外面，
+           免得每次重绘抽屉内容都被冲掉。 -->
+      <footer class="theory-footer">
+        <a href="./THIRD-PARTY-NOTICES.md" target="_blank" rel="noopener">开源组件与数据来源</a>
+      </footer>
+    </aside>
+  </main>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/three.module.js",
+    "three/addons/": "./vendor/three/addons/"
+  }
+}
+</script>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>

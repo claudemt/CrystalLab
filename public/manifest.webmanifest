@@ -1,0 +1,17 @@
+{
+  "name": "CrystalLab",
+  "short_name": "CrystalLab",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0e1012",
+  "theme_color": "#0e1012",
+  "icons": [
+    {
+      "src": "./favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "description": "Interactive crystallography research index and reciprocal-space workbench"
+}

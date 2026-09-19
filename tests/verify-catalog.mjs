@@ -1,0 +1,15 @@
+import { SPACE_GROUPS, POINT_GROUP_METADATA } from '../src/data/space-groups.js';
+import { POINT_GROUP_TABLE } from '../src/core/symmetry.js';
+import { BRAVAIS } from '../src/core/lattices.js';
+let fail=false;
+const check=(name,ok,detail='')=>{console.log(`${ok?'✓':'✗'} ${name}${detail?` · ${detail}`:''}`);if(!ok)fail=true};
+check('230 space-group types',SPACE_GROUPS.length===230,`count=${SPACE_GROUPS.length}`);
+check('International numbers 1…230',SPACE_GROUPS.every((g,i)=>g.number===i+1));
+check('32 crystallographic point groups',POINT_GROUP_TABLE.length===32,`count=${POINT_GROUP_TABLE.length}`);
+check('14 Bravais lattices',Object.keys(BRAVAIS).length===14,`count=${Object.keys(BRAVAIS).length}`);
+const symm=SPACE_GROUPS.filter(g=>g.symmorphic).length;
+const sohncke=SPACE_GROUPS.filter(g=>g.sohncke).length;
+check('73 symmorphic space groups',symm===73,`count=${symm}`);
+check('65 Sohncke space groups',sohncke===65,`count=${sohncke}`);
+check('point-group metadata covers catalog',SPACE_GROUPS.every(g=>POINT_GROUP_METADATA[g.pointGroup]));
+if(fail)process.exit(1);

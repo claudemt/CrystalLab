@@ -1,0 +1,30 @@
+:root {
+  color-scheme: dark;
+  --bg: #0b0d0f;
+  --surface-0: #0d0f11;
+  --surface-1: #111417;
+  --surface-2: #171b1f;
+  --surface-3: #1d2227;
+  --line: #252b30;
+  --line-strong: #353d44;
+  --text: #e7e9e7;
+  --text-2: #bdc3c5;
+  --muted: #858e94;
+  --dim: #657078;
+  /* 与 src/app/constants.js 的 COLORS 同值：--direct ← a2，--reciprocal ← b1，
+     --symmetry ← symmetry，--ws / --bz 各取同名项。两处不一致时图例色块会与 3D 对象不同色，
+     所以 tests/verify-ui.mjs 会断言这两张表相等。 */
+  --direct: #a4b8c2;
+  --reciprocal: #c8ad73;
+  --symmetry: #c96b7d;
+  --ws: #7fa9b8;
+  --bz: #e0b84a;
+  --positive: #8fa797;
+  --negative: #c47d7d;
+  --control-h: 34px;
+  --toolbar-h: 48px;
+  --inspector-w: 248px;
+  --theory-w: 408px;
+  --font-ui: "Segoe UI Variable", "SF Pro Text", "PingFang SC", "Microsoft YaHei UI", "Noto Sans CJK SC", system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}

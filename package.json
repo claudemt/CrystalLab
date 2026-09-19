@@ -1,0 +1,36 @@
+{
+  "name": "crystallab",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Interactive 3D crystallography research workbench for direct and reciprocal space",
+  "license": "MIT",
+  "author": "claudemt",
+  "keywords": [
+    "crystallography",
+    "solid-state-physics",
+    "three.js",
+    "bravais-lattice",
+    "reciprocal-lattice",
+    "brillouin-zone",
+    "wigner-seitz",
+    "space-group",
+    "miller-indices"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/claudemt/CrystalLab.git"
+  },
+  "homepage": "https://claudemt.github.io/CrystalLab/",
+  "scripts": {
+    "dev": "node tools/dev-server.mjs",
+    "build": "node tools/build.mjs",
+    "preview": "node tools/dev-server.mjs --root dist --port 4173",
+    "test": "node tests/verify-architecture.mjs && node tests/verify-ui.mjs && node tests/verify-lattice.mjs && node tests/verify-structures.mjs && node tests/verify-structure-ws.mjs && node tests/verify-symmetry.mjs && node tests/verify-structure-symmetry.mjs && node tests/verify-kpaths.mjs && node tests/verify-catalog.mjs",
+    "test:browser": "node tools/browser-smoke.mjs",
+    "check": "npm test && npm run build"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  }
+}
