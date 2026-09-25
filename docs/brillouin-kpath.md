@@ -1,4 +1,4 @@
-# 第一 Brillouin 区、高对称点与标准 k-path
+# 第一 Brillouin 区与参考 k 路径
 
 本页采用
 
@@ -98,11 +98,11 @@ P_\Gamma=P.
 E_n(k_x,k_y,k_z).
 \]
 
-因此“标准路径上看不到”不等于“整个 BZ 不存在某个极值或交叉”。
+因此“这条参考路径上看不到”不等于“整个 BZ 不存在某个极值或交叉”。
 
-## 4. 本项目采用的标准路径
+## 4. 本项目的内置路径
 
-当前网页对下列 Bravais cases 使用 SeeK-path 的 HPKOT 标准表。符号和分数坐标均以标准 primitive reciprocal basis 为准。
+当前网页仅为 cP、cI、cF、tP、oP、hP 六种 Bravais 类型提供内置路径，分数坐标相对于本项目当前的原始倒格基。不同分支之间不连线；它们是可视化与教学参考，不能代替对具体输入晶胞、基矢选择和 setting 的标准化判定。其余类型不显示未经核对的路径。
 
 ### cubic P · cP2
 
@@ -146,7 +146,7 @@ U&=(\tfrac58,\tfrac14,\tfrac58).
 \end{aligned}
 \]
 
-线段采用 HPKOT 给出的
+内置线段为
 
 \[
 \Gamma-X-U,\qquad K-\Gamma-L-W-X.
@@ -188,7 +188,7 @@ L=(\tfrac12,0,\tfrac12),\quad
 H=(\tfrac13,\tfrac13,\tfrac12).
 \]
 
-标准线段为
+内置线段为
 
 \[
 \Gamma-M-K-\Gamma-A-L-H-A,
@@ -226,4 +226,4 @@ E(\mathbf k)=\frac{\hbar^2|\mathbf k|^2}{2m},
 
 ## 7. 数据来源
 
-标准特殊点和推荐路径采用 Materials Cloud 的 **SeeK-path**（HPKOT convention）。网页只内置已经与当前 primitive basis 数值核验一致的 cases。第一 BZ 的几何仍由本项目的半空间交算法独立计算。
+特殊点与路径数据整理自 Materials Cloud 的 **SeeK-path**（HPKOT convention）。网页仅对上述六类检查了当前原始倒格基下的坐标、BZ 包含性和 little group；这不等于对所有 setting 或 extended case 的完整标准化验证。第一 BZ 的几何由本项目的半空间交算法计算。

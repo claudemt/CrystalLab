@@ -75,7 +75,7 @@ check('scene renderer isolated', scene.includes('export function renderScene') &
 check('viewport owns camera framing', viewport.includes('bounds()') && viewport.includes('fitDistance(') && viewport.includes('updateClipPlanes()') && viewport.includes('updateSymmetryAnimation'));
 check('overlay reciprocal scale is lattice adaptive', scene.includes('reciprocalDisplayScale(state, lattice)') && !scene.includes('1/scale') && !scene.includes('invScale'));
 check('overlay reciprocal geometry remains visible', scene.includes('depthTest: !overlay') && scene.includes('renderOrder: overlay ? 260 : 0') && scene.includes('material.depthTest = false'));
-check('one-shot symmetry animation', scene.includes('startedAt: null, duration: 760, done: false') && !scene.includes('time%') && html.includes('id="symmetryApplyBtn"'));
+check('one-shot symmetry animation', scene.includes('startedAt: null, duration: 1200, done: false') && !scene.includes('time%') && html.includes('id="symmetryApplyBtn"'));
 check('aligned layer columns', /direct-layer-row[\s\S]*data-layer="primitive"[\s\S]*data-layer="ws"[\s\S]*data-layer="conventional"[\s\S]*data-layer="family"/.test(html) && /reciprocal-layer-row[\s\S]*data-layer="recipPrim"[\s\S]*data-layer="recipConv"[\s\S]*data-layer="bz"[\s\S]*data-layer="g"/.test(html));
 check('shared grid layer removes duplicated axes/points', html.includes('data-layer="reference"') && !html.includes('data-layer="axes"') && !html.includes('data-layer="recipAxes"'));
 check('space rows context switch', css.includes('html[data-space-view="reciprocal"] .direct-layer-row') && css.includes('html[data-space-view="overlay"] .reciprocal-layer-row'));
@@ -253,7 +253,7 @@ check('Wigner–Seitz follows the structure in structure mode',
   && theory.includes('currentWignerSeitz(state, lattice)')
   && model.includes('export function currentWignerSeitz')
   && /state\.mode !== 'structure'\) return wignerSeitzCached\(lattice\.primitive\)/.test(model)
-  && theory.includes('真实原子位移'));
+  && theory.includes('原子 Voronoi 胞'));
 // BZ 永远是倒格点阵的 W–S 胞（倒空间没有基元），不该跟着结构走。
 check('Brillouin zone stays lattice-based',
   scene.includes('wignerSeitzCached(reciprocal)') && workbench.includes('wignerSeitzCached(reciprocal)'));

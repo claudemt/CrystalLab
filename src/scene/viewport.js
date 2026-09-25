@@ -2,10 +2,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { state } from '../app/state.js';
 
-// 雾密度必须随场景尺度反向缩放：固定密度在实空间（包围球半径 ~1.8）几乎不可见，
-// 但倒空间半径 ~33、相机距离 ~128，1-exp(-(0.026·109)²) ≈ 100%，整个场景被雾抹平。
-// 以实空间观感为基准，任何尺度下雾的浓度一致（同 docs/design-system.md「3D scale」）。
-const FOG_BASE_DENSITY = 0.026;
+// 雾密度随场景尺度反向缩放，保持不同尺度下视觉浓度一致。
+const FOG_BASE_DENSITY = 0.018;
 const FOG_BASE_RADIUS = 1.8;
 
 export class Viewport3D {
@@ -17,8 +15,7 @@ export class Viewport3D {
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(devicePixelRatio, 1.8));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.05;
+    this.renderer.toneMapping = THREE.NoToneMapping;
     this.renderer.setClearColor(0x000000, 0);
     element.appendChild(this.renderer.domElement);
 
@@ -175,7 +172,7 @@ export class Viewport3D {
   updateLabelVisibility() {
     const labels = [];
     this.dynamic.traverse(object => {
-      if (object.userData?.kind === 'klabel') labels.push(object);
+      if ((object.userData?.kind === 'klabel' || object.userData?.kind === 'sym-label') && object.userData.desiredPixels) labels.push(object);
     });
     if (!labels.length) return;
     const right = new THREE.Vector3(1, 0, 0).applyQuaternion(this.camera.quaternion);
@@ -186,6 +183,15 @@ export class Viewport3D {
       label.visible = true;
       label.updateWorldMatrix(true, false);
       const center = new THREE.Vector3().setFromMatrixPosition(label.matrixWorld);
+      // 保持字号在屏幕上稳定：默认取景、倒格放大和滚轮缩放都不应把标签压成几个像素。
+      const parentScale = new THREE.Vector3();
+      label.parent?.getWorldScale(parentScale);
+      const distance = center.distanceTo(this.camera.position);
+      const worldHeight = 2 * distance * Math.tan(THREE.MathUtils.degToRad(this.camera.fov) / 2)
+        * label.userData.desiredPixels / Math.max(1, this.renderer.domElement.clientHeight);
+      const localHeight = worldHeight / Math.max(parentScale.y, 1e-6);
+      label.scale.set(localHeight * label.userData.aspect, localHeight, 1);
+      label.updateWorldMatrix(true, false);
       const ndc = center.clone().project(this.camera);
       if (ndc.z < -1 || ndc.z > 1) {
         label.visible = false;
@@ -198,7 +204,7 @@ export class Viewport3D {
       const halfW = Math.max(0.018, Math.abs(rightEdge.x - ndc.x));
       const halfH = Math.max(0.018, Math.abs(upperEdge.y - ndc.y));
       const rect = { l: ndc.x - halfW, r: ndc.x + halfW, b: ndc.y - halfH, t: ndc.y + halfH };
-      const overlaps = placed.some(p => !(rect.r < p.l - 0.008 || rect.l > p.r + 0.008 || rect.t < p.b - 0.008 || rect.b > p.t + 0.008));
+      const overlaps = placed.some(p => !(rect.r < p.l - 0.014 || rect.l > p.r + 0.014 || rect.t < p.b - 0.014 || rect.b > p.t + 0.014));
       label.visible = !overlaps;
       if (!overlaps) placed.push(rect);
     }
@@ -210,13 +216,21 @@ export class Viewport3D {
       if (!animation?.marker || animation.done) return;
       if (animation.startedAt === null) animation.startedAt = time;
       const raw = THREE.MathUtils.clamp((time - animation.startedAt) / animation.duration, 0, 1);
-      const t = raw < 0.5 ? 4 * raw ** 3 : 1 - ((-2 * raw + 2) ** 3) / 2;
+      const t = raw < 0.5 ? 4 * raw * raw * raw : 1 - Math.pow(-2 * raw + 2, 3) / 2;
+      // 路径与终点随标记点推进渐次显现：前 40% 线性淡入，之后保持全显。
+      // 这让"变换轨迹"成为动画的自然产物，而非预先给出的答案。
+      const reveal = Math.min(1, raw / 0.4);
+      if (animation.pathSegments) {
+        animation.pathSegments.visible = true;
+        const material = Array.isArray(animation.pathSegments.material) ? animation.pathSegments.material[0] : animation.pathSegments.material;
+        if (material) material.opacity = 0.30 * reveal;
+      }
+      if (animation.endPoint) animation.endPoint.visible = true;
       if (animation.kind === 'rotation') {
         const q = new THREE.Quaternion().setFromAxisAngle(animation.axis, animation.angle * t);
         animation.marker.position.copy(animation.start).applyQuaternion(q);
       } else if (animation.kind === 'identity') {
         animation.marker.position.copy(animation.start);
-        animation.marker.scale.setScalar(1 + 0.16 * Math.sin(Math.PI * raw));
       } else {
         animation.marker.position.copy(animation.start).lerp(animation.end, t);
       }

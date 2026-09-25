@@ -84,7 +84,7 @@
         <section class="inspector-section">
           <h2>几何</h2>
           <div class="control-block">
-            <label class="toggle-row"><input type="checkbox" data-action="setNamedLayer" data-layer-action="setMillerVisible" id="millerLayerToggle"><span>Miller / G<sub>hkl</sub></span></label>
+            <label class="toggle-row"><input type="checkbox" data-action="setNamedLayer" data-layer-action="setMillerVisible" id="millerLayerToggle"><span>Miller 晶面分析</span></label>
             <div id="millerControls" class="control-details hidden">
               <div class="hkl-grid">
                 <label><span>h</span><input data-action="setMillerIndices" id="hInput" type="number" min="-6" max="6" value="1"></label>
@@ -92,11 +92,11 @@
                 <label><span>l</span><input data-action="setMillerIndices" id="lInput" type="number" min="-6" max="6" value="1"></label>
               </div>
               <div class="preset-grid"><button data-action="setMillerPreset" data-hkl="1,0,0" type="button">(100)</button><button data-action="setMillerPreset" data-hkl="1,1,0" type="button">(110)</button><button data-action="setMillerPreset" data-hkl="1,1,1" type="button">(111)</button></div>
-              <button data-action="toggleMillerFamily" id="millerFamilyBtn" class="text-button" type="button"><span>▱</span><span data-label>显示 {hkl} 面族</span></button>
+              <p class="control-hint">下方图层栏可切换等价面族与倒空间法向。</p>
             </div>
           </div>
           <div class="control-block">
-            <label class="toggle-row"><input type="checkbox" data-action="setNamedLayer" data-layer-action="setKPathVisible" id="kPathLayerToggle"><span>标准 k 路径</span></label>
+            <label class="toggle-row"><input type="checkbox" data-action="setNamedLayer" data-layer-action="setKPathVisible" id="kPathLayerToggle"><span>参考 k 路径</span></label>
             <div id="kpathNote" class="micro-readout"></div>
           </div>
         </section>
@@ -125,6 +125,7 @@
           <div class="stage-title"><span id="stageSpaceDot" class="space-dot is-direct"></span><strong id="stageTitle">实空间</strong></div>
           <span id="stageCaption" class="stage-caption"></span>
         </header>
+        <div id="kpathGuide" class="kpath-guide hidden" aria-live="polite"></div>
         <div id="stageLegend" class="stage-legend"></div>
         <aside id="stageReadout" class="stage-readout" aria-label="当前参数"></aside>
 
@@ -136,16 +137,16 @@
           <div class="layer-grid direct-layer-row">
             <span class="layer-space-label">实空间</span>
             <button class="layer-button" data-action="toggleLayer" data-layer="primitive" type="button"><i></i>原胞</button>
-            <button class="layer-button" data-action="toggleLayer" data-layer="ws" type="button"><i></i>W–S</button>
+            <button class="layer-button" data-action="toggleLayer" data-layer="ws" type="button"><i></i><span data-ws-label>原子胞</span></button>
             <button class="layer-button" data-action="toggleLayer" data-layer="conventional" type="button"><i></i>惯用胞</button>
-            <button class="layer-button" data-action="toggleLayer" data-layer="family" type="button"><i></i>{hkl}</button>
+            <button class="layer-button" data-action="toggleLayer" data-layer="family" type="button"><i></i>{hkl} 面族</button>
           </div>
           <div class="layer-grid reciprocal-layer-row">
             <span class="layer-space-label">倒空间</span>
             <button class="layer-button" data-action="toggleLayer" data-layer="recipPrim" type="button"><i></i>原胞</button>
             <button class="layer-button" data-action="toggleLayer" data-layer="recipConv" type="button"><i></i>惯用胞</button>
             <button class="layer-button" data-action="toggleLayer" data-layer="bz" type="button"><i></i>BZ</button>
-            <button class="layer-button" data-action="toggleLayer" data-layer="g" type="button"><i></i>G<sub>hkl</sub></button>
+            <button class="layer-button" data-action="toggleLayer" data-layer="g" type="button"><i></i>法向 G</button>
           </div>
         </div>
       </div>
@@ -163,6 +164,7 @@
         <select id="catalogSystemFilter" aria-label="晶系筛选"></select>
         <span id="catalogCount" class="catalog-count"></span>
       </div>
+      <p class="catalog-scope">此处检索群类型与分类信息；不提供完整群操作、Wyckoff 位置或各 setting 的数据库。</p>
       <div class="catalog-body">
         <div class="catalog-list" id="catalogList"></div>
         <article class="catalog-detail" id="catalogDetail"></article>

@@ -77,15 +77,43 @@ function renderSymmetry(root, state, basisVectors, unit, animate = false, always
 
   const start = new THREE.Vector3(0.72, 0.38, 0.52).normalize().multiplyScalar(extent * 0.72);
   const end = toV3(applyMatrix(W, start.toArray()));
-  if (op.kind !== 'identity') group.add(makeSegments(symmetryPath(op, start, end), color, { opacity: 0.30, radius: LINE_WEIGHTS.path * unit }));
+  // 动画播放时，路径和终点先隐藏——让标记点的移动本身揭示变换轨迹，
+  // 避免"答案先于过程"的视觉干扰；静态模式（非播放）照常全量展示。
+  const pathSegments = op.kind !== 'identity'
+    ? makeSegments(symmetryPath(op, start, end), color, { opacity: 0.30, radius: LINE_WEIGHTS.path * unit })
+    : null;
+  if (pathSegments) {
+    if (animate) pathSegments.visible = false;
+    group.add(pathSegments);
+  }
   group.add(makePointCloud([start], 0x7d8589, {
     radius: 0.032 * unit, opacity: 0.62, shape: 'sphere',
     depthTest: !alwaysOnTop, depthWrite: false, renderOrder: 322
   }));
-  group.add(makePointCloud([end], color, {
+  const endPoint = makePointCloud([end], color, {
     radius: 0.041 * unit, opacity: 0.94, shape: 'sphere',
     depthTest: !alwaysOnTop, depthWrite: false, renderOrder: 323
-  }));
+  });
+  if (animate) endPoint.visible = false;
+  group.add(endPoint);
+
+  if (op.kind !== 'identity') {
+    const startLabel = makeTextSprite('起点', { fontSize: 36, scale: 0.065 * unit, textColor: '#9aa0a4', alwaysOnTop: true });
+    startLabel.renderOrder = 324;
+    startLabel.position.copy(start).addScaledVector(start.clone().normalize(), 0.065 * unit);
+    startLabel.userData.kind = 'sym-label';
+    startLabel.userData.desiredPixels = 14;
+    startLabel.userData.aspect = startLabel.scale.x / startLabel.scale.y;
+    group.add(startLabel);
+    const endLabel = makeTextSprite('终点', { fontSize: 36, scale: 0.065 * unit, textColor: '#c96b7d', alwaysOnTop: true });
+    endLabel.renderOrder = 324;
+    endLabel.position.copy(end).addScaledVector(end.clone().normalize(), 0.065 * unit);
+    endLabel.userData.kind = 'sym-label';
+    endLabel.userData.desiredPixels = 14;
+    endLabel.userData.aspect = endLabel.scale.x / endLabel.scale.y;
+    if (animate) endLabel.visible = false;
+    group.add(endLabel);
+  }
 
   if (animate) {
     const marker = new THREE.Mesh(
@@ -96,9 +124,9 @@ function renderSymmetry(root, state, basisVectors, unit, animate = false, always
     marker.position.copy(start);
     group.add(marker);
     group.userData.symmetryAnimation = {
-      marker, start, end, kind: op.kind,
+      marker, start, end, kind: op.kind, pathSegments, endPoint,
       axis: op.axis ? toV3(op.axis).normalize() : new THREE.Vector3(0, 0, 1),
-      angle: op.angle || 0, startedAt: null, duration: 760, done: false
+      angle: op.angle || 0, startedAt: null, duration: 1200, done: false
     };
   }
 
@@ -124,8 +152,10 @@ function renderGroupOrbit(root, state, lattice, basisVectors, unit, alwaysOnTop 
     const q = toV3(applyMatrix(op.W, p.toArray()));
     if (!cartesian.some(x => x.distanceToSquared(q) < 1e-10)) cartesian.push(q);
   }
+  // 群轨道点只是辅助示意，不应抢原子/格架的视觉焦点：半径和透明度都压低，
+  // 让种子点（白色、更大）仍然是目光落点。
   root.add(makePointCloud(cartesian, COLORS.symmetry, {
-    radius: 0.034 * unit, opacity: 0.66, shape: 'sphere',
+    radius: 0.024 * unit, opacity: 0.42, shape: 'sphere',
     depthTest: !alwaysOnTop, depthWrite: false, renderOrder: 310
   }));
   if (cartesian.length) {
@@ -165,19 +195,22 @@ function renderKPath(lattice, reciprocal, rootGroup, unit, alwaysOnTop = false) 
 
   const placed = [];
   for (const [name, p] of Object.entries(positions)) {
-    const radial = p.length() > 1e-7 ? p.clone().normalize().multiplyScalar(0.065 * unit) : new THREE.Vector3(0.05 * unit, 0.055 * unit, 0.01);
+    const radial = p.length() > 1e-7 ? p.clone().normalize().multiplyScalar(0.085 * unit) : new THREE.Vector3(0.05 * unit, 0.055 * unit, 0.01);
     const labelPosition = p.clone().add(radial);
     for (let tries = 0; tries < 3; tries++) {
-      if (!placed.some(q => q.distanceTo(labelPosition) < 0.08 * unit)) break;
+      if (!placed.some(q => q.distanceTo(labelPosition) < 0.12 * unit)) break;
       let tangent = p.length() > 1e-7 ? new THREE.Vector3().crossVectors(p.clone().normalize(), new THREE.Vector3(0, 0, 1)) : new THREE.Vector3(1, 0, 0);
       if (tangent.length() < 0.15) tangent = new THREE.Vector3().crossVectors(p.clone().normalize(), new THREE.Vector3(0, 1, 0));
       tangent.normalize().multiplyScalar(0.04 * unit * (tries + 1) * (placed.length % 2 ? 1 : -1));
       labelPosition.add(tangent);
     }
     placed.push(labelPosition.clone());
-    const label = makeTextSprite(displayKLabel(name), { fontSize: 46, scale: 0.105 * unit });
+    const label = makeTextSprite(displayKLabel(name), { fontSize: 52, scale: 0.105 * unit, alwaysOnTop: true });
+    label.renderOrder = alwaysOnTop ? 282 : 6;
     label.position.copy(labelPosition);
     label.userData.kind = 'klabel';
+    label.userData.desiredPixels = 22;
+    label.userData.aspect = label.scale.x / label.scale.y;
     label.userData.frameExclude = true;
     label.userData.priority = name === 'GAMMA' ? 0 : 1;
     root.add(label);
@@ -215,7 +248,7 @@ export function renderScene(view, state, lattice) {
         const pointOpacity = overlay ? 0.66 : 0.94;
         directRoot.add(makePointCloud(latticePoints(direct, repeatRange(state)), COLORS.site, {
           radius: 0.057 * directUnit, opacity: pointOpacity, shape: 'sphere',
-          depthWrite: !overlay, emissiveIntensity: 0.35
+          depthWrite: !overlay, emissiveIntensity: 0
         }));
       }
     }
@@ -279,13 +312,12 @@ export function renderScene(view, state, lattice) {
     if (state.showReference) {
       reciprocalRoot.add(makePointCloud(latticePoints(reciprocal, repeatRange(state)), COLORS.b1, {
         radius: 0.056 * reciprocalUnit, opacity: overlay ? 0.96 : 0.90, shape: 'cube',
-        depthTest: !overlay, depthWrite: !overlay, renderOrder: overlay ? 260 : 0, emissiveIntensity: 0.30
+        depthTest: !overlay, depthWrite: !overlay, renderOrder: overlay ? 260 : 0, emissiveIntensity: 0
       }));
-      // 焦点壳层：G=0 加最近邻倒格点，放大到与正空间原子相同的视觉权重。
-      // 正空间用「中心原子 + 配位壳层」定住视线，倒空间的对应物就是原点加最低阶反射那一圈。
+      // 焦点壳层：G=0 加最近邻倒格点。
       reciprocalRoot.add(makePointCloud(nearestShell(reciprocal), COLORS.b1, {
         radius: 0.130 * reciprocalUnit, opacity: overlay ? 0.86 : 1, shape: 'cube',
-        depthTest: !overlay, depthWrite: !overlay, renderOrder: overlay ? 262 : 1, emissiveIntensity: 0.42
+        depthTest: !overlay, depthWrite: !overlay, renderOrder: overlay ? 262 : 1, emissiveIntensity: 0
       }));
     }
     if (state.showReciprocalConventionalCell) {
@@ -298,7 +330,7 @@ export function renderScene(view, state, lattice) {
         const sites = cell.sites.map(f => c1.clone().multiplyScalar(f[0]).addScaledVector(c2, f[1]).addScaledVector(c3, f[2]));
         reciprocalRoot.add(makePointCloud(sites, COLORS.b1, {
           radius: 0.056 * reciprocalUnit, opacity: overlay ? 0.96 : 1, shape: 'cube',
-          depthTest: !overlay, depthWrite: !overlay, renderOrder: overlay ? 260 : 0, emissiveIntensity: 0.30
+          depthTest: !overlay, depthWrite: !overlay, renderOrder: overlay ? 260 : 0, emissiveIntensity: 0
         }));
       }
     }
@@ -317,7 +349,8 @@ export function renderScene(view, state, lattice) {
       const G = b1.clone().multiplyScalar(state.h).addScaledVector(b2, state.k).addScaledVector(b3, state.l);
       reciprocalRoot.add(makeArrow(new THREE.Vector3(), G, COLORS.g, { radius: LINE_WEIGHTS.axis * reciprocalUnit }));
     }
-    if (state.showSymmetry && !directVisible(state)) {
+    if (state.showSymmetry) {
+      // 对照模式下实、倒空间都展示对称操作，帮助用户对照两种空间中的变换效果。
       renderSymmetry(reciprocalRoot, state, reciprocal, reciprocalUnit, playSymmetry, false);
       renderGroupOrbit(reciprocalRoot, state, lattice, reciprocal, reciprocalUnit, false);
     }

@@ -211,6 +211,19 @@ const catalog = await evaluate(`(function(){
 })()`);
 check('catalog opens as separate workspace', catalog.ok, JSON.stringify(catalog));
 
+const catalogSearch = await evaluate(`(function(){
+  const search=document.getElementById('catalogSearch');
+  search.value='227';search.dispatchEvent(new Event('input',{bubbles:true}));
+  const row=document.querySelector('#catalogList .catalog-row.active');
+  const detail=document.getElementById('catalogDetail');
+  const matched=row?.dataset.id==='227'&&detail.querySelector('.catalog-number')?.textContent==='#227';
+  search.value='unmatched-query';search.dispatchEvent(new Event('input',{bubbles:true}));
+  const empty=!document.querySelector('#catalogList .catalog-row')&&detail.textContent.includes('没有匹配条目');
+  search.value='';search.dispatchEvent(new Event('input',{bubbles:true}));
+  return {ok:matched&&empty,matched,empty};
+})()`);
+check('catalog search keeps the detail in sync and explains empty results', catalogSearch.ok, JSON.stringify(catalogSearch));
+
 // ── 委派覆盖 ──────────────────────────────────────────────────────────────────
 // 控件现在只在 HTML/模板串里声明 data-action，由 bindWorkbench 一处查表分发。打错一个字母
 // **不会报错**，只会静默 no-op——所以这些检查一律断言「点下去真的有副作用」，而不是「元素存在」。
@@ -257,9 +270,9 @@ const miller = await evaluate(`(function(){
   const readback=document.getElementById('millerReadout')?.textContent??'';
   const family=document.querySelector('.layer-button[data-layer="family"]');
   const before=family.classList.contains('active');
-  document.getElementById('millerFamilyBtn').click();
+  family.click();
   const after=family.classList.contains('active');
-  document.getElementById('millerFamilyBtn').click();   // 复原
+  family.click();   // 复原
   return {ok:preset==='1,1,0'&&before!==after,preset,before,after,readback};
 })()`);
 check('miller preset, index inputs and family toggle', miller.ok, JSON.stringify(miller));
@@ -299,6 +312,55 @@ const selects = await evaluate(`(function(){
 })()`);
 check('three selects dispatch through the change table',
   selects.okB && selects.okS && Boolean(selects.identity), JSON.stringify(selects));
+
+const pathCoverage = await evaluate(`(function(){
+  document.querySelector('.mode-tab[data-mode="bravais"]').click();
+  const select=document.getElementById('bravaisSelect'),toggle=document.getElementById('kPathLayerToggle');
+  select.value='monoclinic-P';select.dispatchEvent(new Event('change',{bubbles:true}));
+  const unsupported=toggle.disabled&&!toggle.checked&&document.getElementById('kpathNote').textContent.includes('暂无');
+  select.value='hexagonal-P';select.dispatchEvent(new Event('change',{bubbles:true}));
+  const supported=!toggle.disabled;
+  toggle.click();
+  const guide=document.getElementById('kpathGuide');
+  const branchBreak=!guide.classList.contains('hidden')&&guide.textContent.includes('Γ → M → K')
+    &&guide.querySelectorAll('em').length===2;
+  toggle.click();
+  document.querySelector('.mode-tab[data-mode="structure"]').click();
+  return {ok:unsupported&&supported&&branchBreak,unsupported,supported,branchBreak};
+})()`);
+check('unsupported paths are disabled; supported paths show branch breaks', pathCoverage.ok, JSON.stringify(pathCoverage));
+
+const pathTable = await evaluate(`(function(){
+  document.querySelector('.mode-tab[data-mode="bravais"]').click();
+  const select=document.getElementById('bravaisSelect');
+  select.value='hexagonal-P';select.dispatchEvent(new Event('change',{bubbles:true}));
+  document.getElementById('kPathLayerToggle').click();
+  document.querySelector('.theory-tab[data-theory-tab="derivation"]').click();
+  const section=[...document.querySelectorAll('#theoryContent section')].find(x=>x.querySelector('h3')?.textContent.includes('hP2'));
+  const rows=section?.querySelectorAll('tbody tr').length;
+  const breaks=section?.querySelectorAll('.path-break').length;
+  const guide=document.getElementById('kpathGuide');
+  const readable=!guide.classList.contains('hidden')&&guide.textContent.includes('Γ → M → K');
+  document.getElementById('kPathLayerToggle').click();
+  document.querySelector('.mode-tab[data-mode="structure"]').click();
+  return {ok:rows===6&&breaks===2&&readable,rows,breaks,readable};
+})()`);
+check('k-path table lists only used points and marks discontinuities', pathTable.ok, JSON.stringify(pathTable));
+
+const atomicCell = await evaluate(`(function(){
+  document.querySelector('[data-space-view="direct"]').click();
+  const structure=document.getElementById('structureSelect');
+  structure.value='nacl';structure.dispatchEvent(new Event('change',{bubbles:true}));
+  const ws=document.querySelector('.layer-button[data-layer="ws"]');
+  if(!ws.classList.contains('active')) ws.click();
+  const structural=ws.textContent.includes('原子胞')&&document.getElementById('stageReadout').textContent.includes('原子 Voronoi')
+    &&document.getElementById('stageReadout').textContent.includes('Cl ·');
+  document.querySelector('.mode-tab[data-mode="bravais"]').click();
+  const lattice=ws.textContent.includes('W–S');
+  document.querySelector('.mode-tab[data-mode="structure"]').click();
+  return {ok:structural&&lattice,structural,lattice};
+})()`);
+check('atomic Voronoi and lattice Wigner–Seitz are labelled separately', atomicCell.ok, JSON.stringify(atomicCell));
 
 const theoryTabs = await evaluate(`(function(){
   const content=()=>document.getElementById('theoryContent').innerHTML;
@@ -355,6 +417,19 @@ const closeTheory = await evaluate(`(function(){
   return {ok:document.getElementById('appShell').classList.contains('theory-closed')};
 })()`);
 check('theory drawer closes', closeTheory.ok, JSON.stringify(closeTheory));
+
+await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 780, deviceScaleFactor: 1, mobile: true });
+const mobileCatalog = await evaluate(`(function(){
+  document.getElementById('catalogToggleBtn').click();
+  const toolbar=document.querySelector('.catalog-toolbar').getBoundingClientRect();
+  const scope=document.querySelector('.catalog-scope').getBoundingClientRect();
+  const list=document.getElementById('catalogList').getBoundingClientRect();
+  const search=document.getElementById('catalogSearch').getBoundingClientRect();
+  return {ok:toolbar.bottom<=scope.top+1&&scope.bottom<=list.top+1&&search.bottom<=toolbar.bottom+1,
+    toolbarBottom:toolbar.bottom,scopeTop:scope.top,scopeBottom:scope.bottom,listTop:list.top};
+})()`);
+check('mobile catalog toolbar and scope note do not overlap', mobileCatalog.ok, JSON.stringify(mobileCatalog));
+await send('Emulation.clearDeviceMetricsOverride');
 
 const overflow = await evaluate(`({scroll:document.documentElement.scrollWidth,client:document.documentElement.clientWidth,ok:document.documentElement.scrollWidth<=document.documentElement.clientWidth+1})`);
 check('no horizontal page overflow', overflow.ok, JSON.stringify(overflow));

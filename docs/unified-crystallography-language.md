@@ -1,6 +1,6 @@
 # 晶体学表示法：一套统一的矢量与群作用语言
 
-这份文档把教材中常见但看起来彼此分散的记号统一到少量对象上：**基矩阵、分数坐标、倒格基矩阵与 Seitz 算符**。
+本页固定网页使用的坐标约定。原始基用于点阵与倒格；Miller 指数则按惯用胞定义。
 
 ## 1. 直接格、原胞、惯用胞与 basis
 
@@ -19,10 +19,10 @@ L=\{A\mathbf n:\mathbf n\in\mathbb Z^3\}.
 因此 Bravais lattice 只编码**平移等价性**。实际晶体由 basis 加到每个格点：
 
 \[
-\mathbf r_{\mathbf n\alpha}=A\mathbf n+A\boldsymbol\tau_\alpha,
+\mathbf r_{\mathbf n\alpha}=A\mathbf n+\boldsymbol\tau_\alpha,
 \]
 
-其中 \(\boldsymbol\tau_\alpha\) 是分数坐标。惯用胞只是为了显式呈现晶系对称性而选择的非最小晶胞；primitive cell 才恰含一个 Bravais 格点。
+其中 \(\boldsymbol\tau_\alpha\) 是笛卡尔位移；若使用分数坐标 \(\mathbf u_\alpha\)，则 \(\boldsymbol\tau_\alpha=A\mathbf u_\alpha\)。惯用胞用于显示晶系对称性；原胞恰含一个 Bravais 格点。
 
 ## 2. 分数坐标与笛卡尔坐标
 
@@ -69,32 +69,34 @@ e^{i\mathbf G\cdot\mathbf R}=1.
 
 ## 4. Miller 指数、晶面与晶向
 
-晶向 \([uvw]\) 在直接空间中对应
+本节的晶向与 Miller 晶面都按惯用胞 \(C=[\mathbf c_1\;\mathbf c_2\;\mathbf c_3]\) 标记。晶向 \([uvw]\) 对应
 
 \[
-\mathbf d=A(u,v,w)^T.
+\mathbf d=C(u,v,w)^T.
 \]
 
-晶面 \((hkl)\) 的法向则由倒格矢给出：
+本应用的 Miller 指数 \((hkl)\) 也相对于 \(C\) 定义。设 \(\mathbf r=C\mathbf y\) 且 \(\mathbf h=(h,k,l)^T\)，平面族满足 \(\mathbf h^T\mathbf y=m\)。其法向 covector 为
 
 \[
-\mathbf G_{hkl}=B(h,k,l)^T.
+\mathbf g_{hkl}=2\pi C^{-T}\mathbf h.
 \]
 
 平行晶面族满足
 
 \[
-\mathbf G_{hkl}\cdot\mathbf r=2\pi m,
+\mathbf g_{hkl}\cdot\mathbf r=2\pi m,
 \qquad m\in\mathbb Z,
 \]
 
 因此
 
 \[
-d_{hkl}=\frac{2\pi}{|\mathbf G_{hkl}|}.
+d_{hkl}=\frac{2\pi}{|\mathbf g_{hkl}|}.
 \]
 
-只有在特殊度量（例如立方晶格）下，\([hkl]\) 才与 \((hkl)\) 法向平行；一般晶格中必须严格区分直接空间方向与倒空间法向。
+这是相邻几何平面的间距。对中心化点阵，只有满足中心化条件时 \(\mathbf g_{hkl}\in L^*\)；它才可写为 \(B\mathbf m\)（\(\mathbf m\in\mathbb Z^3\)）。不满足时该几何面仍存在，但不能把它当成真实倒格矢。只有在特殊度量（例如立方晶格）下，直接空间的 \([hkl]\) 才与 \((hkl)\) 的法向平行。
+
+例如取晶格常数 \(a=1\) 的 FCC：\(C=I\)，所以 \(\mathbf g_{100}=2\pi(1,0,0)^T\)。它与面心平移 \((1/2,0,1/2)^T\) 的点积为 \(\pi\)，故不属于 \(L^*\)；但 \(\mathbf g_{111}=2\pi(1,1,1)^T\) 与每个面心平移的点积都是 \(2\pi\)，属于 \(L^*\)。原始倒格矢 \(B(1,0,0)^T=2\pi(-1,1,1)^T\) 也属于 \(L^*\)，却不是惯用胞的 \((100)\) 法向。这三个对象不能混用。
 
 ## 5. 点群：固定原点的正交作用
 
@@ -234,9 +236,9 @@ M^{-T}\mathbf q-\mathbf q\in\mathbb Z^3.
 |---|---|---|---|
 | 位置 | \(\mathbf x\in\mathbb R^3\) | \(\mathbf r\) | \(\mathbf r=A\mathbf x\) |
 | Bravais 平移 | \(\mathbf n\in\mathbb Z^3\) | \(\mathbf R\) | \(\mathbf R=A\mathbf n\) |
-| 晶向 | \([uvw]\) | \(\mathbf d\) | \(\mathbf d=A(u,v,w)^T\) |
+| 晶向（惯用胞指标） | \([uvw]\) | \(\mathbf d\) | \(\mathbf d=C(u,v,w)^T\) |
 | 倒格指标 | \(\mathbf m\in\mathbb Z^3\) | \(\mathbf G\) | \(\mathbf G=B\mathbf m\) |
-| Miller 面 | \((hkl)\) | 法向 \(\mathbf G_{hkl}\) | \(\mathbf G_{hkl}=B(h,k,l)^T\) |
+| Miller 面（惯用胞指标） | \((hkl)\) | 法向 \(\mathbf g_{hkl}\) | \(\mathbf g_{hkl}=2\pi C^{-T}(h,k,l)^T\) |
 | 点群操作 | \(M\) | \(W\) | \(W=AMA^{-1}\) |
 | 分数平移 | \(\mathbf t\) | \(\boldsymbol\tau\) | \(\boldsymbol\tau=A\mathbf t\) |
 | k 点 | \(\mathbf q\) | \(\mathbf k\) | \(\mathbf k=B\mathbf q\) |

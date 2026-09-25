@@ -1,5 +1,5 @@
 import { BRAVAIS } from '../src/core/lattices.js';
-import { KPATHS } from '../src/core/kpaths.js';
+import { KPATHS, kPathBranches, kPathPointNames } from '../src/core/kpaths.js';
 import { latticePointGroup, littleGroupAtK } from '../src/core/symmetry.js';
 
 const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
@@ -18,6 +18,10 @@ for(const [id,kp] of Object.entries(KPATHS)){
   const b=reciprocal(l.primitive);
   const G=[];for(let i=-2;i<=2;i++)for(let j=-2;j<=2;j++)for(let k=-2;k<=2;k++)if(i||j||k)G.push(add(add(scale(b[0],i),scale(b[1],j)),scale(b[2],k)));
   for(const [a,z] of kp.path)if(!kp.points[a]||!kp.points[z]){console.error(`✗ ${id} path references missing point ${a}-${z}`);fail=true}
+  const names=kPathPointNames(kp),branches=kPathBranches(kp);
+  if(names.length!==Object.keys(kp.points).length){console.error(`✗ ${id} table contains points not used by path`);fail=true}
+  const restored=branches.flatMap(branch=>branch.slice(1).map((end,i)=>[branch[i],end]));
+  if(JSON.stringify(restored)!==JSON.stringify(kp.path)){console.error(`✗ ${id} branch breaks alter path segments`);fail=true}
   let maxViolation=-Infinity;
   const fullOrder=latticePointGroup(l.primitive).order;
   if(littleGroupAtK(l.primitive,[0,0,0]).order!==fullOrder){console.error(`✗ ${id} Γ little group mismatch`);fail=true}
@@ -29,5 +33,8 @@ for(const [id,kp] of Object.entries(KPATHS)){
   }
   const ok=maxViolation<1e-7;fail||=!ok;
   console.log(`${ok?'✓':'✗'} ${id.padEnd(15)} ${kp.variant.padEnd(4)} points=${String(Object.keys(kp.points).length).padStart(2)} segments=${String(kp.path.length).padStart(2)} max BZ violation=${maxViolation.toExponential(2)}`);
+}
+for(const [id,count] of [['cubic-F',2],['hexagonal-P',3],['orthorhombic-P',4]]){
+  if(kPathBranches(KPATHS[id]).length!==count){console.error(`✗ ${id} branch count`);fail=true}
 }
 if(fail)process.exit(1);

@@ -24,7 +24,7 @@ A=\begin{bmatrix}\mathbf a_1&\mathbf a_2&\mathbf a_3\end{bmatrix}.
 \mathbf r_{\mathbf n\alpha}=A\mathbf n+\boldsymbol\tau_\alpha.
 \]
 
-因此“晶体结构 = Bravais lattice + basis”不是口号，而是所有周期晶体位置集合的直接表达式。
+这里的 basis 是相对于格点的原子位移；若存为分数坐标 \(\mathbf u_\alpha\)，需先换算为笛卡尔位移 \(\boldsymbol\tau_\alpha=A\mathbf u_\alpha\)。
 
 原胞体积
 

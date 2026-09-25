@@ -207,7 +207,7 @@ export function structureWignerSeitzCached(lattice, structure) {
     const shell = coordinationShell(atoms, structure.basis[0].label);
     const center = shell ? shell.center : atoms.reduce((best, a) => a.position.lengthSq() < best.position.lengthSq() ? a : best, atoms[0]);
     const relative = atoms.map(a => a.position.clone().sub(center.position));
-    structureWsCache.set(key, { ...voronoiCell(relative, 54), center: center.position.clone() });
+    structureWsCache.set(key, { ...voronoiCell(relative, 54), center: center.position.clone(), centerLabel: center.label });
   }
   return structureWsCache.get(key);
 }

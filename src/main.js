@@ -1,6 +1,7 @@
 import { state, LAYERS, setLayer, toggleLayer } from './app/state.js';
 import { SPACE_VIEWS } from './app/constants.js';
 import { currentLattice, fracToCartesian } from './core/model.js';
+import { getKPath } from './core/kpaths.js';
 import { Viewport3D } from './scene/viewport.js';
 import { renderScene } from './scene/render-scene.js';
 import { initCatalog } from './ui/catalog.js';
@@ -19,6 +20,7 @@ function frameKey(lattice = currentLattice(state)) {
 
 function render({ forceTheory = false } = {}) {
   const lattice = currentLattice(state);
+  if (state.showKPath && !getKPath(lattice.id)) state.showKPath = false;
   if (state.mode !== 'catalog') renderScene(view, state, lattice);
   syncWorkbench(lattice);
   if (state.mode !== 'catalog') theory.update(lattice, forceTheory);
@@ -26,7 +28,12 @@ function render({ forceTheory = false } = {}) {
 
 function stopAutoRotate() {
   state.autoRotate = false;
-  $('#autoRotateBtn')?.classList.remove('active');
+  const btn = $('#autoRotateBtn');
+  if (btn) {
+    btn.classList.remove('active');
+    btn.setAttribute('aria-pressed', 'false');
+    btn.title = '自动旋转';
+  }
 }
 
 function activateLayerFromTheory(layer) {
@@ -108,6 +115,7 @@ const actions = {
   },
 
   setKPathVisible(visible) {
+    if (visible && !getKPath(currentLattice(state).id)) return;
     state.showKPath = visible;
     if (visible && state.spaceView === 'direct') state.spaceView = 'reciprocal';
     render();
@@ -167,8 +175,10 @@ const actions = {
 
   toggleAutoRotate() {
     state.autoRotate = !state.autoRotate;
-    $('#autoRotateBtn').classList.toggle('active', state.autoRotate);
-    $('#autoRotateBtn').title = state.autoRotate ? '关闭自动旋转' : '自动旋转';
+    const btn = $('#autoRotateBtn');
+    btn.classList.toggle('active', state.autoRotate);
+    btn.setAttribute('aria-pressed', String(state.autoRotate));
+    btn.title = state.autoRotate ? '关闭自动旋转' : '自动旋转';
   },
 
   toggleTheory(open) {

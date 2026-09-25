@@ -3,12 +3,12 @@ import { SPACE_VIEWS } from '../app/constants.js';
 import { BRAVAIS, STRUCTURES, SYSTEM_NAMES, CRYSTAL_SYSTEMS } from '../core/lattices.js';
 import { SYMMETRY_OPERATIONS } from '../core/symmetry.js';
 import { cellVolume, latticeParameters, reciprocalVectors } from '../core/geometry.js';
-import { getKPath } from '../core/kpaths.js';
+import { getKPath, kPathBranches, displayKLabel } from '../core/kpaths.js';
 import {
   basisCell, currentPointGroup, currentWignerSeitz, directVisible, fmt, namedSymmetryValid,
   reciprocalDisplayScale, reciprocalVisible, wignerSeitzCached
 } from '../core/model.js';
-import { $, $$, setButtonLabel, setHidden } from './dom.js';
+import { $, $$, setHidden } from './dom.js';
 import { typesetMath } from './mathjax.js';
 
 export function populateSelectors(lattice) {
@@ -42,7 +42,14 @@ export function refreshSymmetryControls(lattice) {
 function refreshKPathReadout(lattice) {
   const path = getKPath(lattice.id);
   const note = $('#kpathNote');
-  if (note) note.textContent = path ? `${path.variant} · ${new Set(path.path.flat()).size} 特殊点 · ${path.path.length} 路径段` : '无内置 HPKOT 路径';
+  if (note) note.textContent = path ? '' : '当前 Bravais 类型暂无内置路径';
+  const guide = $('#kpathGuide');
+  if (guide) {
+    guide.classList.toggle('hidden', !path || !state.showKPath || !reciprocalVisible(state));
+    guide.innerHTML = path
+      ? `<strong>${path.variant} · k 路径</strong><span>${kPathBranches(path).map(branch => branch.map(displayKLabel).join(' → ')).join(' <em>|</em> ')}</span><small>竖线表示分支断开；各点坐标见「推导」页签</small>`
+      : '';
+  }
 }
 
 function syncInspector(lattice) {
@@ -51,7 +58,7 @@ function syncInspector(lattice) {
   setHidden('#bravaisField', structural);
   setHidden('#symmetryControls', !state.showSymmetry);
   setHidden('#millerControls', !state.showMiller);
-  setHidden('#kpathNote', !state.showKPath);
+  setHidden('#kpathNote', Boolean(getKPath(lattice.id)));
 
   const symmetryToggle = $('#symmetryLayerToggle');
   const millerToggle = $('#millerLayerToggle');
@@ -59,13 +66,15 @@ function syncInspector(lattice) {
   const orbitToggle = $('#groupOrbitToggle');
   if (symmetryToggle) symmetryToggle.checked = state.showSymmetry;
   if (millerToggle) millerToggle.checked = state.showMiller;
-  if (kPathToggle) kPathToggle.checked = state.showKPath;
+  if (kPathToggle) {
+    kPathToggle.checked = state.showKPath;
+    kPathToggle.disabled = !getKPath(lattice.id);
+  }
   if (orbitToggle) orbitToggle.checked = state.showGroupOrbit;
 
   refreshKPathReadout(lattice);
-  const familyButton = $('#millerFamilyBtn');
-  familyButton?.classList.toggle('active', state.showMillerFamily);
-  setButtonLabel(familyButton, state.showMillerFamily ? '隐藏 {hkl} 面族' : '显示 {hkl} 面族');
+  const wsLabel = $('[data-ws-label]');
+  if (wsLabel) wsLabel.textContent = structural ? '原子胞' : 'W–S';
 }
 
 function syncLayerDock() {
@@ -101,7 +110,7 @@ function updateStageMeta(lattice) {
 
   // 格点/倒格点在场景里直接可见，左下角不再重复标注。
   const legends = [];
-  if (state.showWS && directVisible(state)) legends.push('<span class="legend-item"><i class="legend-mark ws"></i>W–S</span>');
+  if (state.showWS && directVisible(state)) legends.push(`<span class="legend-item"><i class="legend-mark ws"></i>${state.mode === 'structure' ? '原子 Voronoi' : 'W–S'}</span>`);
   if (state.showBZ && reciprocalVisible(state)) legends.push('<span class="legend-item"><i class="legend-mark bz"></i>第一 BZ</span>');
   if (state.showMiller) legends.push('<span class="legend-item"><i class="legend-mark symmetry"></i>(hkl)</span>');
   if (state.showKPath && reciprocalVisible(state)) legends.push('<span class="legend-item"><i class="legend-mark reciprocal"></i>k 路径</span>');
@@ -127,27 +136,22 @@ function updateReadout(lattice) {
   const conventionalVolume = cellVolume(lattice.conventional);
   const reciprocal = reciprocalVectors(lattice.primitive);
   const reciprocalVolume = cellVolume(reciprocal);
-  const system = CRYSTAL_SYSTEMS[lattice.system];
   const rows = [];
   const add = (label, value) => rows.push(`<div class="readout-row"><span>${label}</span><b>${value}</b></div>`);
   const separator = () => rows.push('<div class="readout-separator"></div>');
 
-  let title;
   if (state.spaceView === 'reciprocal') {
-    title = '倒空间';
     add('|b₁|', fmt(reciprocal[0].length(), 3));
     add('|b₂|', fmt(reciprocal[1].length(), 3));
     add('|b₃|', fmt(reciprocal[2].length(), 3));
     add('V*', fmt(reciprocalVolume, 3));
   } else if (state.spaceView === 'overlay') {
-    title = '正倒对偶';
     add('Vₚ', fmt(primitiveVolume, 3));
     add('Vₚ*', fmt(reciprocalVolume, 3));
     add('VₚVₚ*', fmt(primitiveVolume * reciprocalVolume, 3));
     add('(2π)³', fmt((2 * Math.PI) ** 3, 3));
     add('显示归一化', `×${fmt(reciprocalDisplayScale(state, lattice), 3)}`);
   } else {
-    title = `${system.name} · ${lattice.centering}`;
     const params = latticeParameters(lattice.conventional);
     add('a', fmt(params.a, 3));
     add('b / c', `${fmt(params.b, 3)} / ${fmt(params.c, 3)}`);
@@ -173,10 +177,10 @@ function updateReadout(lattice) {
     }
   }
   if (state.showWS && directVisible(state)) {
-    // 与画面同源：结构模式报的是真实原子的广义 W–S 胞，不是点阵的。
+    // 与画面同源：结构模式报的是真实原子的 Voronoi 胞，不是点阵 W–S 胞。
     const data = currentWignerSeitz(state, lattice);
     separator();
-    add('W–S', `${data.activePlanes.length} 面 · ${data.vertices.length} 顶点`);
+    add(state.mode === 'structure' ? '原子 Voronoi' : 'W–S 原胞', `${state.mode === 'structure' ? `${data.centerLabel} · ` : ''}${data.activePlanes.length} 面 · ${data.vertices.length} 顶点`);
   }
   if (state.showBZ && reciprocalVisible(state)) {
     const data = wignerSeitzCached(reciprocal);
@@ -188,7 +192,7 @@ function updateReadout(lattice) {
     add(state.mode === 'structure' ? '|P|' : '|P(L)|', currentPointGroup(state, lattice).order);
   }
 
-  card.innerHTML = `<div class="readout-title">${title}</div>${rows.join('')}`;
+  card.innerHTML = rows.join('');
 }
 
 export function syncWorkbench(lattice) {
@@ -233,7 +237,6 @@ export function bindWorkbench(actions) {
     openCatalog:        () => actions.setMode('catalog', false),
     playSymmetry:       () => actions.playSymmetry(),
     toggleLayer:        el => actions.toggleLayer(el.dataset.layer),
-    toggleMillerFamily: () => actions.toggleLayer('family'),
     setSpaceView:       el => actions.setSpaceView(el.dataset.spaceView),
     toggleRepeat:       () => actions.toggleRepeat(),
     setMillerPreset:    el => actions.setMillerPreset(el.dataset.hkl),

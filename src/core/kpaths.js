@@ -1,12 +1,12 @@
 export const KPATHS={
   'cubic-P':{
     variant:'cP2',
-    points:{GAMMA:[0,0,0],R:[.5,.5,.5],M:[.5,.5,0],X:[0,.5,0],X_1:[.5,0,0]},
+    points:{GAMMA:[0,0,0],R:[.5,.5,.5],M:[.5,.5,0],X:[0,.5,0]},
     path:[['GAMMA','X'],['X','M'],['M','GAMMA'],['GAMMA','R'],['R','X'],['R','M']]
   },
   'cubic-F':{
     variant:'cF2',
-    points:{GAMMA:[0,0,0],X:[.5,0,.5],L:[.5,.5,.5],W:[.5,.25,.75],W_2:[.75,.25,.5],K:[.375,.375,.75],U:[.625,.25,.625]},
+    points:{GAMMA:[0,0,0],X:[.5,0,.5],L:[.5,.5,.5],W:[.5,.25,.75],K:[.375,.375,.75],U:[.625,.25,.625]},
     path:[['GAMMA','X'],['X','U'],['K','GAMMA'],['GAMMA','L'],['L','W'],['W','X']]
   },
   'cubic-I':{
@@ -26,10 +26,24 @@ export const KPATHS={
   },
   'hexagonal-P':{
     variant:'hP2',
-    points:{GAMMA:[0,0,0],A:[0,0,.5],K:[1/3,1/3,0],H:[1/3,1/3,.5],H_2:[1/3,1/3,-.5],M:[.5,0,0],L:[.5,0,.5]},
+    points:{GAMMA:[0,0,0],A:[0,0,.5],K:[1/3,1/3,0],H:[1/3,1/3,.5],M:[.5,0,0],L:[.5,0,.5]},
     path:[['GAMMA','M'],['M','K'],['K','GAMMA'],['GAMMA','A'],['A','L'],['L','H'],['H','A'],['L','M'],['H','K']]
   }
 };
 
 export function getKPath(latticeId){return KPATHS[latticeId]||null}
 export function displayKLabel(label){return label==='GAMMA'?'Γ':label.replace('_1','₁').replace('_2','₂')}
+
+export function kPathPointNames(data){return data?[...new Set(data.path.flat())]:[]}
+
+// 连续线段合成一条路径；不相接的线段另起一条，保留能带图中的断点。
+export function kPathBranches(data){
+  if(!data)return [];
+  const branches=[];
+  for(const [start,end] of data.path){
+    const last=branches.at(-1);
+    if(last?.at(-1)===start)last.push(end);
+    else branches.push([start,end]);
+  }
+  return branches;
+}
